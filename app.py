@@ -4,13 +4,22 @@ Multi-agent system for creating high-authority Lead Magnets.
 """
 
 import os
+import sys
+from pathlib import Path
+
+# Load .env FIRST - before ANY other imports that might use env vars
+from dotenv import load_dotenv
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path, override=True)
+print(f"[STARTUP] Loaded .env from: {env_path}")
+print(f"[STARTUP] OPENAI_API_KEY: {os.getenv('OPENAI_API_KEY', 'NOT SET')[:25]}...")
+print(f"[STARTUP] ANTHROPIC_API_KEY: {os.getenv('ANTHROPIC_API_KEY', 'NOT SET')[:25]}...")
+
+# Now import everything else
 import json
 import logging
 from datetime import datetime
 from flask import Flask, request, jsonify, render_template_string
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +29,7 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "faststrat-magnet-factory")
 
-# Import agents
+# Import agents - these will now use the loaded env vars
 from agents.ai_client import AIClient
 from agents.market_intel import MarketIntelAgent
 from agents.product_architect import ProductArchitectAgent
@@ -28,11 +37,14 @@ from agents.creative_director import CreativeDirectorAgent
 from agents.growth_copywriter import GrowthCopywriterAgent
 
 # Initialize AI client and agents
+# Note: AIClient will read fresh env vars on init
 ai_client = AIClient()
+ai_client._refresh_credentials()  # Force refresh after dotenv load
 market_intel = MarketIntelAgent(ai_client)
 product_architect = ProductArchitectAgent(ai_client)
 creative_director = CreativeDirectorAgent(os.getenv("OPENAI_API_KEY", ""))
 growth_copywriter = GrowthCopywriterAgent(ai_client)
+print(f"[STARTUP] Agents initialized with OPENAI: {os.getenv('OPENAI_API_KEY', '')[:25]}...")
 
 # Store for current production
 current_production = {
@@ -808,17 +820,13 @@ if __name__ == '__main__':
     debug = os.getenv('DEBUG', 'false').lower() == 'true'
 
     print(f"""
-╔══════════════════════════════════════════════════════════════╗
-║                                                              ║
-║   🚀 FastStrat Magnet Factory v3.0                           ║
-║   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━                           ║
-║                                                              ║
-║   Dashboard: http://localhost:{port}                          ║
-║   Health:    http://localhost:{port}/health                   ║
-║                                                              ║
-║   AI Status: {ai_client.get_status()}
-║                                                              ║
-╚══════════════════════════════════════════════════════════════╝
+========================================
+  FastStrat Magnet Factory v3.0
+========================================
+  Dashboard: http://localhost:{port}
+  Health:    http://localhost:{port}/health
+  AI Status: {ai_client.get_status()}
+========================================
     """)
 
     app.run(host='0.0.0.0', port=port, debug=debug)

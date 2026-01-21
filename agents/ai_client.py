@@ -13,9 +13,15 @@ logger = logging.getLogger(__name__)
 class AIClient:
     """
     Unified AI client with Anthropic primary and OpenAI fallback.
+    Credentials are read fresh on each initialization.
     """
 
     def __init__(self):
+        # Read credentials fresh - in case env was loaded after import
+        self._refresh_credentials()
+
+    def _refresh_credentials(self):
+        """Refresh credentials from environment."""
         self.anthropic_key = os.getenv("ANTHROPIC_API_KEY", "")
         self.openai_key = os.getenv("OPENAI_API_KEY", "")
         self.primary = os.getenv("PRIMARY_AI", "openai")
@@ -23,6 +29,7 @@ class AIClient:
         self.anthropic_client = None
         self.openai_client = None
 
+        logger.info(f"Refreshing credentials - OPENAI: {self.openai_key[:20] if self.openai_key else 'NOT SET'}...")
         self._init_clients()
 
     def _init_clients(self):

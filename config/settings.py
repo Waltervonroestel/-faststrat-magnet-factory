@@ -1,12 +1,10 @@
 """
 Configuration settings for FastStrat Magnet Factory.
+Note: dotenv is loaded in app.py before this module is imported.
 """
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-
-load_dotenv()
 
 
 class Settings:
