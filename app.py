@@ -370,9 +370,12 @@ DASHBOARD_HTML = """
                     <div class="input-group">
                         <label>Formato del Lead Magnet</label>
                         <select id="trend-format">
-                            <option value="carousel">Carousel (LinkedIn)</option>
-                            <option value="guide">Mini-Guía (PDF)</option>
-                            <option value="checklist">Checklist</option>
+                            <option value="carousel">🎠 Carousel LinkedIn (8-12 slides)</option>
+                            <option value="guide">📘 Guía/Ebook PDF (5-15 págs)</option>
+                            <option value="checklist">✅ Checklist Accionable (15-25 items)</option>
+                            <option value="cheatsheet">📋 Cheat Sheet (1-2 págs)</option>
+                            <option value="template">📝 Template/Plantilla</option>
+                            <option value="swipefile">📂 Swipe File (copy-paste)</option>
                         </select>
                     </div>
                     <button class="btn-generate" onclick="generateMagnet('trend-jacker')">
@@ -400,10 +403,16 @@ DASHBOARD_HTML = """
                     <div class="input-group">
                         <label>Formato del Lead Magnet</label>
                         <select id="problem-format">
-                            <option value="guide">Guía Completa (PDF)</option>
-                            <option value="checklist">Checklist Accionable</option>
-                            <option value="template">Template/Plantilla</option>
-                            <option value="carousel">Carousel (LinkedIn)</option>
+                            <option value="guide">📘 Guía Completa (PDF)</option>
+                            <option value="checklist">✅ Checklist Accionable</option>
+                            <option value="template">📝 Template/Plantilla</option>
+                            <option value="worksheet">📄 Worksheet/Ejercicios</option>
+                            <option value="minicourse">📧 Mini-Curso (5 emails)</option>
+                            <option value="toolkit">🧰 Toolkit Completo</option>
+                            <option value="casestudy">📊 Caso de Estudio</option>
+                            <option value="carousel">🎠 Carousel (LinkedIn)</option>
+                            <option value="cheatsheet">📋 Cheat Sheet</option>
+                            <option value="swipefile">📂 Swipe File</option>
                         </select>
                     </div>
                     <button class="btn-generate" onclick="generateMagnet('problem-solver')">
@@ -667,26 +676,22 @@ def trend_jacker_pipeline(data: dict) -> dict:
     top_trend = trending[0]
     research = market_intel.research_trend(top_trend['topic'])
 
-    # Agent 2: Create content
-    logger.info("[Agent 2] Creating content...")
-    if format_type == 'carousel':
-        content = product_architect.create_carousel(research, top_trend['topic'])
-    elif format_type == 'guide':
-        content = product_architect.create_guide(research, top_trend['topic'], pages=5)
-    else:
-        content = product_architect.create_checklist(research, top_trend['topic'])
+    # Agent 2: Create content based on format
+    logger.info(f"[Agent 2] Creating {format_type} content...")
+    content = product_architect.create_content(format_type, research, title=top_trend['topic'])
 
     # Agent 3: Create visual
     logger.info("[Agent 3] Generating visual...")
+    # Extract title from content based on format type
+    title_keys = ['carousel_title', 'guide_title', 'checklist_title', 'cheatsheet_title',
+                  'template_title', 'swipefile_title', 'course_title', 'worksheet_title',
+                  'toolkit_title', 'case_study_title', 'report_title']
+    title = next((content.get(k) for k in title_keys if content.get(k)), top_trend['topic'])
+
     if format_type == 'carousel':
-        visual = creative_director.generate_carousel_cover(
-            content.get('carousel_title', top_trend['topic']),
-            research.get('trend_summary', '')
-        )
+        visual = creative_director.generate_carousel_cover(title, research.get('trend_summary', ''))
     else:
-        visual = creative_director.generate_ebook_cover(
-            content.get('guide_title', content.get('checklist_title', top_trend['topic']))
-        )
+        visual = creative_director.generate_ebook_cover(title)
 
     # Agent 4: Write post
     logger.info("[Agent 4] Writing LinkedIn post...")
@@ -716,21 +721,22 @@ def problem_solver_pipeline(data: dict) -> dict:
     logger.info("[Agent 1] Analyzing pain point...")
     research = market_intel.analyze_pain_point(pain_point)
 
-    # Agent 2: Create content
-    logger.info("[Agent 2] Creating solution content...")
-    if format_type == 'guide':
-        content = product_architect.create_guide(research, pages=7)
-    elif format_type == 'checklist':
-        content = product_architect.create_checklist(research)
-    elif format_type == 'template':
-        content = product_architect.create_template(research)
-    else:
-        content = product_architect.create_carousel(research)
+    # Agent 2: Create content based on format
+    logger.info(f"[Agent 2] Creating {format_type} solution content...")
+    content = product_architect.create_content(format_type, research)
 
     # Agent 3: Create visual
     logger.info("[Agent 3] Generating visual...")
-    title = content.get('guide_title', content.get('checklist_title', content.get('carousel_title', pain_point)))
-    visual = creative_director.generate_ebook_cover(title)
+    # Extract title from content based on format type
+    title_keys = ['guide_title', 'checklist_title', 'carousel_title', 'cheatsheet_title',
+                  'template_title', 'swipefile_title', 'course_title', 'worksheet_title',
+                  'toolkit_title', 'case_study_title']
+    title = next((content.get(k) for k in title_keys if content.get(k)), pain_point)
+
+    if format_type == 'carousel':
+        visual = creative_director.generate_carousel_cover(title, research.get('pain_analysis', ''))
+    else:
+        visual = creative_director.generate_ebook_cover(title)
 
     # Agent 4: Write post
     logger.info("[Agent 4] Writing LinkedIn post...")
